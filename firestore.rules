@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: reservations
+    // Fields:
+    //   - name: string (required)
+    //   - email: string (required, email format)
+    //   - phone: string (required)
+    //   - service: string (optional)
+    //   - date: string (required, date format)
+    //   - time: string (required)
+    //   - createdAt: timestamp (required)
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.email == "adulenevovintage@gmail.com" && request.auth.token.email_verified == true);
+    }
+
+    function isValidReservation(data) {
+      return data.keys().hasAll(['name', 'email', 'phone', 'date', 'time', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             data.phone is string && data.phone.size() > 5 && data.phone.size() < 25 &&
+             data.date is string && data.time is string &&
+             data.createdAt is timestamp;
+    }
+
+    match /reservations/{reservationId} {
+      // Anyone can create a reservation if it's valid
+      allow create: if isValidReservation(request.resource.data);
+      
+      // Only admin (the barber) can read all reservations
+      allow read: if isAdmin();
+      
+      // No updates or deletes allowed for now to maintain integrity
+      allow update, delete: if isAdmin();
+    }
+  }
+}
