@@ -16,6 +16,20 @@ export default function Hero() {
       </div>
 
       <div className="relative z-10 text-center px-4 max-w-6xl">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8 }}
+          className="mb-12 flex justify-center"
+        >
+          <img 
+            src="/logo.jpg" 
+            alt="MB Logo" 
+            className="w-48 h-48 md:w-64 md:h-64 object-contain" 
+            referrerPolicy="no-referrer"
+          />
+        </motion.div>
+
         <motion.span 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

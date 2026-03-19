@@ -6,7 +6,7 @@ import twilio from 'twilio';
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
 
   app.use(express.json());
 
@@ -22,7 +22,7 @@ async function startServer() {
 
   // API Route for notifications
   app.post("/api/notify-barber", async (req, res) => {
-    const { name, email, phone, service, date, time } = req.body;
+    const { name, phone, service, date, time } = req.body;
 
     // Format date to include day of week
     const formattedDate = new Date(date).toLocaleDateString('en-US', { 
@@ -37,7 +37,6 @@ async function startServer() {
 --------------------
 👤 Customer: ${name}
 📞 Phone: ${phone}
-📧 Email: ${email}
 ✂️ Service: ${service}
 📅 Date: ${formattedDate}
 ⏰ Time: ${time}
@@ -68,7 +67,6 @@ async function startServer() {
               <div style="margin-top: 20px;">
                 <p><strong>Customer:</strong> ${name}</p>
                 <p><strong>Phone:</strong> ${phone}</p>
-                <p><strong>Email:</strong> ${email}</p>
                 <p><strong>Service:</strong> <span style="color: #C5A059; font-weight: bold;">${service}</span></p>
                 <p><strong>Date:</strong> ${formattedDate}</p>
                 <p><strong>Time:</strong> ${time}</p>

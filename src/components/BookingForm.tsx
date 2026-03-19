@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Calendar, Clock, User, Phone, Mail, ChevronRight, Star } from 'lucide-react';
-import { saveReservation } from '../firebase';
+import { saveReservation, db, handleFirestoreError, OperationType } from '../firebase';
+import { collection, onSnapshot, query } from 'firebase/firestore';
+
+const TIME_SLOTS = [
+  "09:00 AM", "10:00 AM", "11:00 AM", "01:00 PM", "02:00 PM", "03:00 PM"
+];
 
 export default function BookingForm() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
     phone: '+251 ',
     service: '',
     date: '',
@@ -17,6 +21,39 @@ export default function BookingForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Listen for real-time bookings
+  useEffect(() => {
+    const q = query(collection(db, "bookings"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setBookings(data);
+      setIsInitialLoad(false);
+    }, (err) => {
+      handleFirestoreError(err, OperationType.GET, "bookings");
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const isSlotReserved = (time: string) => {
+    if (!formData.date || !time) return false;
+    
+    // A slot is reserved if ANY booking exists for this exact date and time
+    return bookings.some(booking => 
+      booking.date === formData.date && 
+      booking.time === time
+    );
+  };
+
+  // Clear time when date changes to prevent stale selections
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, time: '' }));
+  }, [formData.date]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -32,6 +69,13 @@ export default function BookingForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Final safety check
+    if (isSlotReserved(formData.time)) {
+      setError("This slot is no longer available. Please select another time.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     
@@ -98,7 +142,7 @@ export default function BookingForm() {
             <div className="flex flex-col gap-4 mb-8">
               <a 
                 href={`https://t.me/am_e3f?text=${encodeURIComponent(
-                  `💈 NEW RESERVATION 💈\n\n👤 Customer: ${formData.name}\n📞 Phone: ${formData.phone}\n📧 Email: ${formData.email}\n✂️ Service: ${formData.service}\n📅 Date: ${new Date(formData.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\n⏰ Time: ${formData.time}`
+                  `💈 NEW RESERVATION 💈\n\n👤 Customer: ${formData.name}\n📞 Phone: ${formData.phone}\n✂️ Service: ${formData.service}\n📅 Date: ${new Date(formData.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\n⏰ Time: ${formData.time}`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -127,17 +171,17 @@ export default function BookingForm() {
           <h2 className="text-6xl md:text-7xl font-serif mb-10 leading-tight">Reserve Your <br /><span className="italic text-gold">Throne</span></h2>
           <p className="text-paper/50 font-light mb-12 leading-relaxed max-w-md mx-auto lg:mx-0 text-lg">
             Our master barbers are in high demand. Secure your preferred time slot 
-            and receive instant confirmation via SMS and Email.
+            and receive instant confirmation.
           </p>
           
           <div className="space-y-8 max-w-xs mx-auto lg:mx-0">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full border border-gold/20 flex items-center justify-center text-gold">
-                <Mail className="w-5 h-5" />
+                <Star className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-sm uppercase tracking-widest font-medium">Email Confirmation</h4>
-                <p className="text-xs text-paper/40">Detailed itinerary sent to your inbox</p>
+                <h4 className="text-sm uppercase tracking-widest font-medium">Premium Service</h4>
+                <p className="text-xs text-paper/40">Expert grooming tailored to you</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -192,20 +236,6 @@ export default function BookingForm() {
             </div>
 
             <div className="space-y-3">
-              <label className="text-[11px] uppercase tracking-[0.2em] text-paper/40 ml-1 font-medium">Email Address</label>
-              <div className="relative group">
-                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gold/50 group-focus-within:text-gold transition-colors" />
-                <input 
-                  type="email" 
-                  required
-                  placeholder="john@example.com"
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-5 focus:border-gold/50 focus:bg-white/[0.08] outline-none transition-all text-base"
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
               <label className="text-[11px] uppercase tracking-[0.2em] text-paper/40 ml-1 font-medium">Select Service</label>
               <div className="relative group">
                 <Star className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gold/50 group-focus-within:text-gold transition-colors" />
@@ -215,11 +245,9 @@ export default function BookingForm() {
                   onChange={(e) => setFormData({...formData, service: e.target.value})}
                 >
                   <option value="" className="bg-ink">Select Service</option>
-                  <option value="Classic Haircut" className="bg-ink">Classic Haircut</option>
-                  <option value="Beard Grooming" className="bg-ink">Beard Grooming</option>
-                  <option value="Royal Shave" className="bg-ink">Royal Shave</option>
-                  <option value="Hair Styling" className="bg-ink">Hair Styling</option>
-                  <option value="Full Service" className="bg-ink">Full Service (Hair + Beard)</option>
+                  <option value="CLASSIC HAIRCUT" className="bg-ink">CLASSIC HAIRCUT</option>
+                  <option value="CLASSIC HAIRCUT + WASH" className="bg-ink">CLASSIC HAIRCUT + WASH</option>
+                  <option value="FULL RITUAL (VIP)" className="bg-ink">FULL RITUAL (VIP)</option>
                 </select>
               </div>
             </div>
@@ -243,16 +271,33 @@ export default function BookingForm() {
                   <Clock className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gold/50 group-focus-within:text-gold transition-colors" />
                   <select 
                     required
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-5 focus:border-gold/50 focus:bg-white/[0.08] outline-none transition-all text-base appearance-none cursor-pointer"
+                    disabled={!formData.date || isInitialLoad}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-5 focus:border-gold/50 focus:bg-white/[0.08] outline-none transition-all text-base appearance-none cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                     onChange={(e) => setFormData({...formData, time: e.target.value})}
+                    value={formData.time}
                   >
-                    <option value="" className="bg-ink">Select Time</option>
-                    <option value="09:00 AM" className="bg-ink">09:00 AM</option>
-                    <option value="10:00 AM" className="bg-ink">10:00 AM</option>
-                    <option value="11:00 AM" className="bg-ink">11:00 AM</option>
-                    <option value="01:00 PM" className="bg-ink">01:00 PM</option>
-                    <option value="02:00 PM" className="bg-ink">02:00 PM</option>
-                    <option value="03:00 PM" className="bg-ink">03:00 PM</option>
+                    {!formData.date ? (
+                      <option value="" className="bg-ink">Select Date First</option>
+                    ) : isInitialLoad ? (
+                      <option value="" className="bg-ink">Checking Availability...</option>
+                    ) : (
+                      <>
+                        <option value="" className="bg-ink">Select Time</option>
+                        {TIME_SLOTS.map(slot => {
+                          const reserved = isSlotReserved(slot);
+                          return (
+                            <option 
+                              key={slot} 
+                              value={slot} 
+                              disabled={reserved}
+                              className={reserved ? "bg-ink text-paper/20" : "bg-ink"}
+                            >
+                              {slot} {reserved ? "(RESERVED)" : ""}
+                            </option>
+                          );
+                        })}
+                      </>
+                    )}
                   </select>
                 </div>
               </div>

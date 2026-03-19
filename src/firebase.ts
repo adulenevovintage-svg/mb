@@ -1,13 +1,14 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-import firebaseConfig from '../firebase-applet-config.json';
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore, collection, addDoc, serverTimestamp, getDocs, query, where, onSnapshot } from "firebase/firestore";
+import firebaseConfig from "../firebase-applet-config.json";
 
+// Initialize Firebase SDK
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 
-enum OperationType {
+export enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',
   DELETE = 'delete',
@@ -35,7 +36,7 @@ interface FirestoreErrorInfo {
   }
 }
 
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
@@ -58,15 +59,17 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   throw new Error(JSON.stringify(errInfo));
 }
 
-export const saveReservation = async (reservationData: any) => {
-  const path = 'reservations';
+export const saveReservation = async (data: any) => {
   try {
-    const docRef = await addDoc(collection(db, path), {
-      ...reservationData,
-      createdAt: serverTimestamp()
+    const docRef = await addDoc(collection(db, "bookings"), {
+      ...data,
+      createdAt: serverTimestamp(),
+      // We also store a numeric timestamp for easier client-side comparison
+      clientTimestamp: Date.now() 
     });
     return docRef.id;
-  } catch (error) {
-    handleFirestoreError(error, OperationType.CREATE, path);
+  } catch (e) {
+    handleFirestoreError(e, OperationType.CREATE, "bookings");
+    throw e;
   }
 };

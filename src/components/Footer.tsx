@@ -1,13 +1,13 @@
 import React from 'react';
-import { Scissors, Instagram, Facebook, Twitter } from 'lucide-react';
+import { Instagram, Facebook, Twitter } from 'lucide-react';
 
 export default function Footer() {
   return (
     <footer className="py-20 px-8 bg-ink border-t border-white/5">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
         <div className="col-span-1 md:col-span-2">
-          <div className="flex items-center gap-2 mb-6">
-            <Scissors className="w-6 h-6 text-gold" />
+          <div className="flex items-center gap-4 mb-6">
+            <img src="/logo.jpg" alt="MB Logo" className="w-16 h-16 object-contain" referrerPolicy="no-referrer" />
             <span className="text-2xl font-serif tracking-[0.3em] uppercase font-bold">MB</span>
           </div>
           <p className="text-paper/40 font-light max-w-sm mb-8 leading-relaxed">
