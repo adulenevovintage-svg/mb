@@ -7,7 +7,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
         <div className="col-span-1 md:col-span-2">
           <div className="flex items-center gap-4 mb-6">
-            <img src="/logo.jpg" alt="MB Logo" className="w-16 h-16 object-contain" referrerPolicy="no-referrer" />
+            <img src="https://image2url.com/r2/default/images/1774026051319-83ccfb4f-e7c4-4271-94a4-8ff37dd11f95.jpg" alt="MB Logo" className="w-16 h-16 object-contain" referrerPolicy="no-referrer" />
             <span className="text-2xl font-serif tracking-[0.3em] uppercase font-bold">MB</span>
           </div>
           <p className="text-paper/40 font-light max-w-sm mb-8 leading-relaxed">
