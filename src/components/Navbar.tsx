@@ -9,7 +9,7 @@ export default function Navbar() {
       className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-6 bg-gradient-to-b from-ink to-transparent"
     >
       <div className="flex items-center gap-4">
-        <img src="/logo.jpg" alt="MB Logo" className="w-16 h-16 object-contain" referrerPolicy="no-referrer" />
+        <img src="/logo2.jpg" alt="MB Logo" className="w-16 h-16 object-contain" referrerPolicy="no-referrer" />
         <span className="text-2xl font-serif tracking-[0.3em] uppercase font-bold">MB</span>
       </div>
       

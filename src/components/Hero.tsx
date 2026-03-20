@@ -23,7 +23,7 @@ export default function Hero() {
           className="mb-12 flex justify-center"
         >
           <img 
-            src="/logo.jpg" 
+            src="/logo2.jpg" 
             alt="MB Logo" 
             className="w-48 h-48 md:w-64 md:h-64 object-contain" 
             referrerPolicy="no-referrer"
