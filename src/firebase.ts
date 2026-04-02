@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, collection, addDoc, serverTimestamp, getDocs, query, where, onSnapshot } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 import firebaseConfig from "../firebase-applet-config.json";
 
 // Initialize Firebase SDK
@@ -58,18 +58,3 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   console.error('Firestore Error: ', JSON.stringify(errInfo));
   throw new Error(JSON.stringify(errInfo));
 }
-
-export const saveReservation = async (data: any) => {
-  try {
-    const docRef = await addDoc(collection(db, "bookings"), {
-      ...data,
-      createdAt: serverTimestamp(),
-      // We also store a numeric timestamp for easier client-side comparison
-      clientTimestamp: Date.now() 
-    });
-    return docRef.id;
-  } catch (e) {
-    handleFirestoreError(e, OperationType.CREATE, "bookings");
-    throw e;
-  }
-};

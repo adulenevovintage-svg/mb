@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Calendar, Clock, User, Phone, Mail, ChevronRight, Star } from 'lucide-react';
-import { saveReservation, db, handleFirestoreError, OperationType } from '../firebase';
-import { collection, onSnapshot, query } from 'firebase/firestore';
-
-const TIME_SLOTS = [
-  "09:00 AM", "10:00 AM", "11:00 AM", "01:00 PM", "02:00 PM", "03:00 PM"
-];
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+import { firebaseService } from '../services/firebaseService';
+import { notifyBarber } from '../services/notificationService';
+import { useBookings } from '../hooks/useBookings';
+import { TIME_SLOTS } from '../constants';
 
 export default function BookingForm() {
   const [step, setStep] = useState(1);
@@ -15,44 +15,29 @@ export default function BookingForm() {
     phone: '+251 ',
     service: '',
     date: '',
-    time: ''
+    bookingTime: ''
   });
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [bookings, setBookings] = useState<any[]>([]);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-
-  // Listen for real-time bookings
-  useEffect(() => {
-    const q = query(collection(db, "bookings"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setBookings(data);
-      setIsInitialLoad(false);
-    }, (err) => {
-      handleFirestoreError(err, OperationType.GET, "bookings");
-    });
-    return () => unsubscribe();
-  }, []);
+  
+  const { bookings, isLoading: isInitialLoad } = useBookings();
 
   const isSlotReserved = (time: string) => {
     if (!formData.date || !time) return false;
     
-    // A slot is reserved if ANY booking exists for this exact date and time
+    // A slot is reserved if ANY booking exists for this exact date and time AND it's not cancelled
     return bookings.some(booking => 
       booking.date === formData.date && 
-      booking.time === time
+      booking.bookingTime === time &&
+      booking.status !== 'cancelled'
     );
   };
 
   // Clear time when date changes to prevent stale selections
   useEffect(() => {
-    setFormData(prev => ({ ...prev, time: '' }));
+    setFormData(prev => ({ ...prev, bookingTime: '' }));
   }, [formData.date]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,7 +56,7 @@ export default function BookingForm() {
     e.preventDefault();
     
     // Final safety check
-    if (isSlotReserved(formData.time)) {
+    if (isSlotReserved(formData.bookingTime)) {
       setError("This slot is no longer available. Please select another time.");
       return;
     }
@@ -81,21 +66,10 @@ export default function BookingForm() {
     
     try {
       // 1. Store in Firestore
-      await saveReservation(formData);
+      await firebaseService.createBooking(formData);
       
       // 2. Trigger Notifications via Backend
-      const response = await fetch('/api/notify-barber', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      const result = await response.json();
-      
-      if (!response.ok || result.warning) {
-        console.warn("Notification issue:", result.warning || "API failed");
-        // We don't block the user if the notification fails, as long as Firestore worked
-      }
+      await notifyBarber(formData);
 
       setIsLoading(false);
       setIsSubmitted(true);
@@ -142,7 +116,7 @@ export default function BookingForm() {
             <div className="flex flex-col gap-4 mb-8">
               <a 
                 href={`https://t.me/am_e3f?text=${encodeURIComponent(
-                  `💈 NEW RESERVATION 💈\n\n👤 Customer: ${formData.name}\n📞 Phone: ${formData.phone}\n✂️ Service: ${formData.service}\n📅 Date: ${new Date(formData.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\n⏰ Time: ${formData.time}`
+                  `💈 NEW RESERVATION 💈\n\n👤 Customer: ${formData.name}\n📞 Phone: ${formData.phone}\n✂️ Service: ${formData.service}\n📅 Date: ${new Date(formData.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\n⏰ Time: ${formData.bookingTime}`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -213,7 +187,7 @@ export default function BookingForm() {
                   <input 
                     type="text" 
                     required
-                    placeholder="John Doe"
+                    placeholder="Abebe Damtew"
                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-5 focus:border-gold/50 focus:bg-white/[0.08] outline-none transition-all text-base"
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                   />
@@ -255,13 +229,21 @@ export default function BookingForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-3">
                 <label className="text-[11px] uppercase tracking-[0.2em] text-paper/40 ml-1 font-medium">Date</label>
-                <div className="relative group">
-                  <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gold/50 group-focus-within:text-gold transition-colors" />
-                  <input 
-                    type="date" 
+                <div className="relative group date-picker-container">
+                  <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gold/50 group-focus-within:text-gold transition-colors z-10" />
+                  <DatePicker
+                    selected={formData.date ? new Date(formData.date) : null}
+                    onChange={(date: Date | null) => {
+                      if (date) {
+                        const formattedDate = date.toISOString().split('T')[0];
+                        setFormData({ ...formData, date: formattedDate });
+                      }
+                    }}
+                    minDate={new Date()}
+                    dateFormat="yyyy-MM-dd"
+                    placeholderText="Select Date"
                     required
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-5 focus:border-gold/50 focus:bg-white/[0.08] outline-none transition-all text-base appearance-none"
-                    onChange={(e) => setFormData({...formData, date: e.target.value})}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-5 focus:border-gold/50 focus:bg-white/[0.08] outline-none transition-all text-base appearance-none cursor-pointer"
                   />
                 </div>
               </div>
@@ -273,8 +255,8 @@ export default function BookingForm() {
                     required
                     disabled={!formData.date || isInitialLoad}
                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-5 focus:border-gold/50 focus:bg-white/[0.08] outline-none transition-all text-base appearance-none cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                    onChange={(e) => setFormData({...formData, time: e.target.value})}
-                    value={formData.time}
+                    onChange={(e) => setFormData({...formData, bookingTime: e.target.value})}
+                    value={formData.bookingTime}
                   >
                     {!formData.date ? (
                       <option value="" className="bg-ink">Select Date First</option>

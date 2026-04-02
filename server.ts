@@ -22,7 +22,7 @@ async function startServer() {
 
   // API Route for notifications
   app.post("/api/notify-barber", async (req, res) => {
-    const { name, phone, service, date, time } = req.body;
+    const { name, phone, service, date, bookingTime } = req.body;
 
     // Format date to include day of week
     const formattedDate = new Date(date).toLocaleDateString('en-US', { 
@@ -39,7 +39,7 @@ async function startServer() {
 📞 Phone: ${phone}
 ✂️ Service: ${service}
 📅 Date: ${formattedDate}
-⏰ Time: ${time}
+⏰ Time: ${bookingTime}
 --------------------
     `.trim();
 
@@ -69,7 +69,7 @@ async function startServer() {
                 <p><strong>Phone:</strong> ${phone}</p>
                 <p><strong>Service:</strong> <span style="color: #C5A059; font-weight: bold;">${service}</span></p>
                 <p><strong>Date:</strong> ${formattedDate}</p>
-                <p><strong>Time:</strong> ${time}</p>
+                <p><strong>Time:</strong> ${bookingTime}</p>
               </div>
               <hr style="border: 1px solid #eee; margin: 20px 0;" />
               <p style="font-size: 12px; color: #666;">This is an automated notification from your Barber Shop app.</p>

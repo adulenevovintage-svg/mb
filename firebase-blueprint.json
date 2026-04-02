@@ -15,12 +15,26 @@
         "timestamp": { "type": "number", "description": "Unix timestamp of when the booking was made." }
       },
       "required": ["name", "email", "phone", "service", "date", "time", "timestamp"]
+    },
+    "User": {
+      "title": "User",
+      "description": "Application user with role",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "user"] }
+      },
+      "required": ["email", "role"]
     }
   },
   "firestore": {
     "bookings": {
       "schema": "Booking",
       "description": "Collection of all barber shop bookings."
+    },
+    "users": {
+      "schema": "User",
+      "description": "User profiles and roles"
     }
   }
 }

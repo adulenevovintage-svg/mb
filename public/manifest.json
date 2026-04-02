@@ -1,0 +1,21 @@
+{
+  "name": "MB Barber Shop",
+  "short_name": "MB Barber",
+  "description": "Premium Grooming and Traditional Barbering",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#141414",
+  "theme_color": "#C5A059",
+  "icons": [
+    {
+      "src": "/logo2.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/logo2.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

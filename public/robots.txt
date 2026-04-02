@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mb-barber.run.app/sitemap.xml

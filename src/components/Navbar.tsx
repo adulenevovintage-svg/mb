@@ -16,6 +16,7 @@ export default function Navbar() {
       <div className="hidden md:flex items-center gap-8 text-sm uppercase tracking-[0.2em] font-light">
         <a href="#services" className="hover:text-gold transition-colors">Services</a>
         <a href="#booking" className="hover:text-gold transition-colors">Book Now</a>
+        <a href="#manage" className="hover:text-gold transition-colors">Manage</a>
       </div>
 
       <a 

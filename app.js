@@ -28,7 +28,7 @@ let lastTelegramResponse = null;
 
 // API Route for notifications
 app.post("/api/notify-barber", async (req, res) => {
-  const { name, phone, service, date, time } = req.body;
+  const { name, phone, service, date, bookingTime } = req.body;
 
   const formattedDate = new Date(date).toLocaleDateString('en-US', { 
     weekday: 'long', 
@@ -44,7 +44,7 @@ app.post("/api/notify-barber", async (req, res) => {
 📞 Phone: ${phone}
 ✂️ Service: ${service}
 📅 Date: ${formattedDate}
-⏰ Time: ${time}
+⏰ Time: ${bookingTime}
 --------------------
   `.trim();
 
@@ -62,7 +62,7 @@ app.post("/api/notify-barber", async (req, res) => {
         from: 'MB Barber Shop <onboarding@resend.dev>',
         to: [recipientEmail],
         subject: `New Reservation: ${name}`,
-        html: `<div style="font-family: sans-serif; padding: 20px;"><h2>New Booking</h2><p><strong>Customer:</strong> ${name}</p><p><strong>Service:</strong> ${service}</p><p><strong>Time:</strong> ${formattedDate} at ${time}</p></div>`
+        html: `<div style="font-family: sans-serif; padding: 20px;"><h2>New Booking</h2><p><strong>Customer:</strong> ${name}</p><p><strong>Service:</strong> ${service}</p><p><strong>Time:</strong> ${formattedDate} at ${bookingTime}</p></div>`
       });
       results.email.success = true;
     } catch (e) { console.error("Email Error:", e); }
